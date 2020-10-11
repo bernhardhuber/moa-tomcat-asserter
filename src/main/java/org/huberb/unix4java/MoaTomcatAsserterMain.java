@@ -23,8 +23,8 @@ import java.io.File;
  */
 public class MoaTomcatAsserterMain {
 
-    private static final String MOA_DIR_DEFAULT = "D:\\tmp\\moa-unisys\\moa-id-auth-final-4.1.4";
-    private static final String TOMCAT_DIR_DEFAULT = "D:\\tmp\\moa-unisys\\apache-tomcat-9.0.38";
+    private static final String MOA_DIR_DEFAULT = "D:\\tmp\\moa-tomcat-basedir\\moa-id-auth-final-4.1.4";
+    private static final String TOMCAT_DIR_DEFAULT = "D:\\tmp\\moa-tomcat-basedir\\apache-tomcat-9.0.38";
     private final File moaDir;
     private final File tomcatDir;
 

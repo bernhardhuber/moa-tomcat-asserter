@@ -27,8 +27,8 @@ import org.junit.Test;
  */
 public class AssertsIT {
 
-    File moaDir = new File("D:\\tmp\\moa-unisys\\moa-id-auth-final-4.1.4");
-    File tomcatDir = new File("D:\\tmp\\moa-unisys\\apache-tomcat-9.0.38");
+    File moaDir = new File("D:\\tmp\\moa-tomcat-basedir\\moa-id-auth-final-4.1.4");
+    File tomcatDir = new File("D:\\tmp\\moa-tomcat-basedir\\apache-tomcat-9.0.38");
 
     @Test
     public void testAssertMoaUnzipped() {
