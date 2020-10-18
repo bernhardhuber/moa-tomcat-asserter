@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.huberb.unix4java;
+package org.huberb.moatomcatasserter;
 
+import org.huberb.moatomcatasserter.SedProcessor1;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;

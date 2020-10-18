@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.huberb.unix4java;
+package org.huberb.moatomcatasserter;
 
 import java.io.Reader;
 import java.io.Writer;

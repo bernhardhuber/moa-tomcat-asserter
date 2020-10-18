@@ -13,24 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.huberb.unix4java;
+package org.huberb.moatomcatasserter;
 
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Properties;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.unix4j.Unix4j;
+import org.unix4j.unix.Grep;
 import org.unix4j.unix.Ls;
 
 /**
  *
  * @author berni3
  */
-public class Asserts {
+public class MoaTomcatAsserts {
 
     static class TomcatAsserts {
 
-        final File tomcatDir;
+        private final File tomcatDir;
 
         public TomcatAsserts(File tomcatDir) {
             this.tomcatDir = tomcatDir;
@@ -53,11 +61,9 @@ public class Asserts {
         boolean assertTomcatUnzippedDetail() {
             assertThatDirectoryCanRead(tomcatDir);
 
-            final File tomcatWebapps = new File(tomcatDir, "webapps");
-            assertThatDirectoryCanRead(tomcatWebapps);
-
-            final File tomcatConf = new File(tomcatDir, "conf");
-            assertThatDirectoryCanRead(tomcatConf);
+            Arrays.asList(new File(tomcatDir, "webapps"),
+                    new File(tomcatDir, "conf"))
+                    .forEach(f -> assertThatDirectoryCanRead(f));
 
             return true;
         }
@@ -91,35 +97,64 @@ public class Asserts {
         boolean assertTomcatInstalledDetail() {
             assertThatDirectoryCanRead(tomcatDir);
 
-            final File tomcatWebapps = new File(tomcatDir, "webapps");
-            assertThatDirectoryCanRead(tomcatWebapps);
+            Arrays.asList(
+                    new File(tomcatDir, "webapps"),
+                    new File(tomcatDir, "webapps/moa-id-auth-final"),
+                    new File(tomcatDir, "webapps/moa-id-configuration"),
+                    new File(tomcatDir, "webapps/oa"))
+                    .forEach(f -> assertThatDirectoryCanRead(f));
 
-            final File tomcatWebappsMoaIdAuthFinal = new File(tomcatWebapps, "moa-id-auth-final");
-            assertThatDirectoryCanRead(tomcatWebappsMoaIdAuthFinal);
-            final File tomcatWebappsMoaIdConfiguration = new File(tomcatWebapps, "moa-id-configuration");
-            assertThatDirectoryCanRead(tomcatWebappsMoaIdConfiguration);
-            final File tomcatWebappsOa = new File(tomcatWebapps, "oa");
-            assertThatDirectoryCanRead(tomcatWebappsOa);
+            Arrays.asList(new File(tomcatDir, "conf"),
+                    new File(tomcatDir, "conf/moa-id"),
+                    new File(tomcatDir, "conf/moa-id-configuration"),
+                    new File(tomcatDir, "conf/moa-id-oa"))
+                    .forEach(d -> assertThatDirectoryCanRead(d));
 
+            Arrays.asList(new File(tomcatDir, "conf/moa-id/moa-id.properties"),
+                    new File(tomcatDir, "conf/moa-id-configuration/moa-id-configtool.properties"),
+                    new File(tomcatDir, "conf/moa-id-oa/oa.properties"))
+                    .forEach(f -> assertThatFileCanRead(f));
+
+            return true;
+        }
+
+        boolean assertTomcatMoaConfiguration() {
             final File tomcatConf = new File(tomcatDir, "conf");
-            assertThatDirectoryCanRead(tomcatConf);
+            for (File f : Arrays.asList(new File(tomcatConf, "moa-id/moa-id.properties"),
+                    new File(tomcatConf, "moa-id-configuration/moa-id-configtool.properties"),
+                    new File(tomcatConf, "conf/moa-id-oa/oa.properties"))) {
 
+                assertThatFileCanRead(f);
+
+                try (FileReader fr = new FileReader(f)) {
+                    final Properties props = new Properties();
+                    props.load(fr);
+                    for (String k : props.stringPropertyNames()) {
+                        String v = props.getProperty(k, "");
+                        if (v.startsWith("file:")) {
+                            assertThatFileIsHierachical(new URI(v));
+                        }
+                    }
+                } catch (URISyntaxException | IOException ex) {
+                    throw new AssertionError("assertTomcatMoaConfiguration file " + f, ex);
+                }
+            }
             return true;
         }
     }
 
     static class MoaAsserts {
 
-        final File moaDir;
+        private final File moaDir;
 
         public MoaAsserts(File moaDir) {
             this.moaDir = moaDir;
         }
 
         boolean assertMoaUnzippedLs() {
-            String moaDirLsOptionsRahLong = Unix4j.ls(Ls.Options.R.h.l, moaDir).toStringResult();
+            final String moaDirLsOptionsRahLong = Unix4j.ls(Ls.Options.R.h.l, moaDir).toStringResult();
 
-            String reason = String.format("moaDir %s is not valid ", moaDir.getAbsolutePath());
+            final String reason = String.format("moaDir %s is not valid ", moaDir.getAbsolutePath());
             MatcherAssert.assertThat(reason, moaDirLsOptionsRahLong,
                     Matchers.allOf(
                             CoreMatchers.containsString("conf:"),
@@ -152,31 +187,70 @@ public class Asserts {
         boolean assertMoaUnzippedDetail() {
             assertThatDirectoryCanRead(moaDir);
 
-            final File moaDirConf = new File(moaDir, "conf");
-            assertThatDirectoryCanRead(moaDirConf);
+            final List<String> moaDirConfSubDirs = Arrays.asList("conf", "conf/moa-id", "conf/moa-id-configuration", "conf/moa-id-oa");
+            moaDirConfSubDirs.forEach(d -> {
+                final File dFile = new File(moaDir, d);
+                assertThatDirectoryCanRead(dFile);
+            });
 
+            final List<String> moaDirTomcatSubDirs = Arrays.asList("tomcat", "tomcat/win32");
+            moaDirTomcatSubDirs.forEach(d -> {
+                final File dFile = new File(moaDir, d);
+                assertThatDirectoryCanRead(dFile);
+            });
+            final List<String> moaDirTomcatSubFiles = Arrays.asList("tomcat/win32/startTomcat.bat", "tomcat/win32/stopTomcat.bat");
+            moaDirTomcatSubFiles.forEach(f -> {
+                final File fFile = new File(moaDir, f);
+                assertThatFileCanRead(fFile);
+            });
+
+            return true;
+        }
+
+        boolean assertsMoaStartTomcat() {
             final File moaDirTomcat = new File(moaDir, "tomcat");
-            assertThatDirectoryCanRead(moaDirTomcat);
-
             final File moaDirTomcatWin32 = new File(moaDirTomcat, "win32");
-            assertThatDirectoryCanRead(moaDirTomcat);
-
             final File moaDirTomcatWin32TomcatStart = new File(moaDirTomcatWin32, "startTomcat.bat");
-            assertThatFileCanRead(moaDirTomcatWin32TomcatStart);
+            final List<String> expectingSetNameList = Arrays.asList("FILE_ENCODING",
+                    "RAND_FILE",
+                    "CONFIG_OPT_SPSS%",
+                    "CONFIG_OPT_ID",
+                    "LOGGING_OPT",
+                    "LOGGING_LOGBACK_OPT",
+                    "CONFIGTOOL_OPT",
+                    "CONFIGTOOL_USER_OPT",
+                    "DEMOOA_OPT STORK_OPT");
+            for (String expectingSetName : expectingSetNameList) {
+                final String matchingSetNameEqual = "set " + expectingSetName + "=";
+                final String matchingCount = Unix4j.fromFile(moaDirTomcatWin32TomcatStart).grep(Grep.Options.count, matchingSetNameEqual).toStringResult();
+                final String reason = String.format("Exact 1 Match of %s", matchingSetNameEqual);
+                MatcherAssert.assertThat(reason, matchingCount, Matchers.equalTo("1"));
 
-            final File moaDirTomcatWin32TomcatStop = new File(moaDirTomcatWin32, "stopTomcat.bat");
-            assertThatFileCanRead(moaDirTomcatWin32TomcatStop);
-
+                final String matchingPercentNamePercent = "%" + expectingSetName + "%";
+                final String matchingCountPercentNamePercent = Unix4j.fromFile(moaDirTomcatWin32TomcatStart).grep(Grep.Options.count, matchingPercentNamePercent).toStringResult();
+                final String reasonPercentNamePercent = String.format("Exact 1 Match of %s", matchingPercentNamePercent);
+                MatcherAssert.assertThat(reasonPercentNamePercent, matchingCountPercentNamePercent, Matchers.equalTo("1"));
+            }
             return true;
         }
     }
 
-    public static void assertThatDirectoryCanRead(File d) {
+    static void assertThatDirectoryCanRead(File d) {
         MatcherAssert.assertThat(String.format("%s is not a directory", d.getAbsolutePath()), d.canRead() && d.isDirectory());
     }
 
-    public static void assertThatFileCanRead(File f) {
+    static void assertThatFileCanRead(File f) {
         MatcherAssert.assertThat(String.format("%s is not a file", f.getAbsolutePath()), f.canRead() && f.isFile());
     }
 
+    static void assertThatFileIsHierachical(URI uri) {
+        MatcherAssert.assertThat("uri.isAbsolute", uri.isAbsolute());
+        MatcherAssert.assertThat("uri.isOpaque", !uri.isOpaque());
+        try {
+            final File f = new File(uri);
+        } catch (IllegalArgumentException iaex) {
+            String reason = "File construction " + iaex.getMessage();
+            throw new AssertionError(reason);
+        }
+    }
 }
